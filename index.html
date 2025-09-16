@@ -64,14 +64,18 @@
     .hero h1{font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.2;margin:.2rem 0}
     .kicker{letter-spacing:.18em;text-transform:uppercase;font-size:.8rem;color:var(--brand)}
     .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+    
     .avatar{
-      width:160px;height:160px;border-radius:50%;
-      background: radial-gradient(100px 100px at 30% 30%, #4cf0b7, transparent 60%),
-                  radial-gradient(120px 120px at 70% 70%, #7ea2ff, transparent 60%),
-                  linear-gradient(135deg,#0f1320,#0b0f16);
-      border:1px solid var(--border);
-      box-shadow:var(--shadow);
-    }
+  width:160px;height:160px;border-radius:50%;
+  background:
+    url('assets/avatar.png') center/64% no-repeat,
+    radial-gradient(100px 100px at 30% 30%, #4cf0b7, transparent 60%),
+    radial-gradient(120px 120px at 70% 70%, #7ea2ff, transparent 60%),
+    linear-gradient(135deg,#0f1320,#0b0f16);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+}
+
 
     /* ---- Sections ---- */
     .cards{grid-template-columns: repeat(12,1fr)}
