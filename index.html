@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1" />  -->
   <title>Pranav Rattehalli Mahesh — Portfolio</title>
   <meta name="description" content="Portfolio of Pranav Rattehalli Mahesh — cybersecurity professional. Projects, experience, education, and contact." />
   <!-- Open Graph / Twitter -->
@@ -118,6 +119,36 @@
       .reveal{opacity:0;transform:translateY(10px);transition:opacity .5s ease, transform .5s ease}
       .reveal.show{opacity:1;transform:none}
     }
+    
+/* iOS text zoom + sticky blur support */
+html, body { -webkit-text-size-adjust: 100%; }
+header { -webkit-backdrop-filter: saturate(120%) blur(10px); }
+
+/* Better mobile nav dropdown */
+@media (max-width: 900px){
+  header .nav { position: relative; }
+  .navlinks{
+    position: absolute; left: 0; right: 0; top: 100%;
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 10px 16px; display: none;
+  }
+  .navlinks.open{ display: flex; flex-direction: column; gap: 8px; }
+}
+
+/* Tighter phone layout (<=600px) */
+@media (max-width: 600px){
+  .container{ padding: 14px; }
+  .hero{ gap: 16px; }
+  .hero h1{ font-size: clamp(1.35rem, 6.5vw, 1.9rem); line-height: 1.25; }
+  .kicker{ font-size: .75rem; letter-spacing: .14em; }
+  .actions .btn{ flex: 1; justify-content: center; }
+  .cards{ gap: 14px; }
+  .card{ padding: 16px; }
+
+  /* emoji-only avatar sizing */
+  .avatar{ width: 120px; height: 120px; background-size: 70%; }
+}
+
   </style>
 </head>
 <body>
