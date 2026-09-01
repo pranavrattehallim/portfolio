@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Pranav Rattehalli Mahesh — Cybersecurity</title>
-<meta name="description" content="Pranav Rattehalli Mahesh — Penetration Tester, AppSec Engineer, MS Cybersecurity at DePaul University."/>
+<meta name="description" content="Pranav Rattehalli Mahesh — Application Security Engineer, Penetration Tester, M.S. Cybersecurity from DePaul University."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -153,6 +153,19 @@ header{
   letter-spacing:.04em;
 }
 
+/* ---- HERO STATS ---- */
+.hero-stats{
+  display:flex;flex-wrap:wrap;gap:28px;margin-bottom:32px;
+}
+.stat-num{
+  font-family:var(--mono);font-size:1.35rem;font-weight:600;
+  color:var(--brand);line-height:1.2;
+}
+.stat-label{
+  font-family:var(--mono);font-size:.68rem;color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;margin-top:2px;
+}
+
 .hero-actions{display:flex;flex-wrap:wrap;gap:12px}
 .btn-primary{
   font-family:var(--mono);font-size:.82rem;
@@ -180,7 +193,7 @@ header{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:8px;
-  width:280px;
+  width:290px;
   overflow:hidden;
   flex-shrink:0;
 }
@@ -260,7 +273,7 @@ header{
 .project-link{
   font-family:var(--mono);font-size:.75rem;
   color:var(--brand);display:inline-flex;align-items:center;gap:6px;
-  margin-top:auto;
+  margin-top:auto;word-break:break-all;
 }
 .project-link:hover{text-decoration:underline}
 .project-card.featured{border-color:var(--brand-dim);background:linear-gradient(135deg,var(--card),#0a1e18)}
@@ -280,9 +293,9 @@ header{
 .skill-list{display:flex;flex-direction:column;gap:6px}
 .skill-item{
   font-family:var(--mono);font-size:.78rem;color:var(--text);
-  display:flex;align-items:center;gap:8px;
+  display:flex;align-items:flex-start;gap:8px;line-height:1.5;
 }
-.skill-item::before{content:'›';color:var(--brand);font-size:.9rem}
+.skill-item::before{content:'›';color:var(--brand);font-size:.9rem;flex-shrink:0}
 
 /* ---- EXPERIENCE ---- */
 .timeline{display:flex;flex-direction:column;gap:0}
@@ -301,6 +314,8 @@ header{
 .tl-date{
   font-family:var(--mono);font-size:.75rem;
   color:var(--muted);text-align:right;padding-top:4px;
+  padding-right:24px;
+  white-space:nowrap;
   letter-spacing:.04em;line-height:1.5;
 }
 .tl-dot{
@@ -319,6 +334,9 @@ header{
   color:var(--brand);margin-bottom:10px;
 }
 .tl-desc{font-size:.88rem;color:var(--muted);line-height:1.75}
+.tl-list{margin:0;padding-left:18px;font-size:.88rem;color:var(--muted);line-height:1.75}
+.tl-list li{margin-bottom:6px}
+.tl-list li::marker{color:var(--brand-dim)}
 .tl-badge{
   display:inline-flex;align-items:center;gap:6px;
   font-family:var(--mono);font-size:.68rem;
@@ -344,6 +362,10 @@ header{
 .edu-degree{font-family:var(--mono);font-size:.88rem;font-weight:500;color:#d8ecf2;margin-bottom:4px}
 .edu-school{font-family:var(--mono);font-size:.78rem;color:var(--brand);margin-bottom:8px}
 .edu-meta{font-size:.82rem;color:var(--muted)}
+.edu-courses{
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+  font-family:var(--mono);font-size:.72rem;color:var(--muted2);line-height:1.7;
+}
 
 /* ---- CONTACT ---- */
 .contact-layout{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
@@ -368,7 +390,7 @@ header{
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .contact-label{font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:2px;letter-spacing:.06em}
-.contact-val{color:var(--text);font-size:.85rem}
+.contact-val{color:var(--text);font-size:.85rem;word-break:break-all}
 .contact-val a{color:var(--brand)}
 
 .resume-card{
@@ -398,7 +420,7 @@ footer{
   .timeline-item{grid-template-columns:1fr;gap:8px}
   .timeline-item::after{display:none}
   .tl-dot{display:none}
-  .tl-date{text-align:left}
+  .tl-date{text-align:left;padding-right:0}
   .tl-content{padding-left:0}
   .contact-layout{grid-template-columns:1fr}
   .navlinks{display:none}
@@ -409,6 +431,7 @@ footer{
 @media(max-width:560px){
   .projects-grid{grid-template-columns:1fr}
   .edu-grid{grid-template-columns:1fr}
+  .hero-stats{gap:20px}
 }
 </style>
 </head>
@@ -443,20 +466,41 @@ footer{
   <div class="container hero-inner" style="width:100%">
     <div class="hero-layout">
       <div class="reveal">
-        <div class="hero-tag">Cybersecurity Professional</div>
+        <div class="hero-tag">Application Security &amp; Penetration Testing</div>
         <h1>Hi, I'm <span class="accent">Pranav</span> —<br/>I break things<br/>to make them safer.</h1>
-        <p class="hero-bio">Penetration tester, AppSec engineer, and security researcher. MS in Cybersecurity at DePaul University, Chicago. Formerly at Happiest Minds Technologies and Société Générale. I build security into systems — not onto them.</p>
+        <p class="hero-bio">Application security engineer and penetration tester with 3 years of experience across 140+ web, API, thick-client, and cloud assessments for enterprise clients. M.S. in Cybersecurity from DePaul University, Chicago. Specialized in AI/LLM security testing and SAST/DAST integration into CI/CD. I build security into systems — not onto them.</p>
+
+        <div class="hero-stats">
+          <div>
+            <div class="stat-num">140+</div>
+            <div class="stat-label">Assessments</div>
+          </div>
+          <div>
+            <div class="stat-num">25+</div>
+            <div class="stat-label">Critical Findings</div>
+          </div>
+          <div>
+            <div class="stat-num">45+</div>
+            <div class="stat-label">High Severity</div>
+          </div>
+          <div>
+            <div class="stat-num">3.892</div>
+            <div class="stat-label">Graduate GPA</div>
+          </div>
+        </div>
+
         <div class="hero-pills">
           <span class="pill">Penetration Testing</span>
+          <span class="pill">AI / LLM Security</span>
           <span class="pill">DevSecOps</span>
-          <span class="pill">SAST / DAST</span>
-          <span class="pill">Secure Code Review</span>
+          <span class="pill">SAST / DAST / SCA</span>
+          <span class="pill">Vulnerability Management</span>
           <span class="pill">OWASP</span>
-          <span class="pill">AI Security</span>
+          <span class="pill">GRC</span>
         </div>
         <div class="hero-actions">
           <a class="btn-primary" href="#projects">View Projects →</a>
-          <a class="btn-outline" href="https://drive.google.com/file/d/1u86enbh--daYbwlxf9Fn0Wz07kOGXk4I/view?usp=share_link" target="_blank">Resume ↗</a>
+          <a class="btn-outline" href="https://drive.google.com/file/d/1u86enbh--daYbwlxf9Fn0Wz07kOGXk4I/view?usp=share_link" target="_blank" rel="noopener">Resume ↗</a>
           <a class="btn-outline" href="#contact">Contact</a>
         </div>
       </div>
@@ -472,10 +516,13 @@ footer{
           <div><span class="t-prompt">❯</span> <span class="t-cmd">whoami</span></div>
           <div class="t-out hi">pranav_rattehalli</div>
           <div style="margin-top:8px"><span class="t-prompt">❯</span> <span class="t-cmd">cat role.txt</span></div>
-          <div class="t-out">AppSec Intern @ Inookey</div>
-          <div class="t-out">MS Cybersecurity @ DePaul</div>
+          <div class="t-out">AppSec Engineer · Pentester</div>
+          <div class="t-out">M.S. Cybersecurity @ DePaul</div>
           <div style="margin-top:8px"><span class="t-prompt">❯</span> <span class="t-cmd">cat certs.txt</span></div>
-          <div class="t-out hi">eJPT · BSCP (In Progress)</div>
+          <div class="t-out hi">OSCP (PEN-200) · exam Oct 2026</div>
+          <div style="margin-top:8px"><span class="t-prompt">❯</span> <span class="t-cmd">cat focus.txt</span></div>
+          <div class="t-out">Web · API · Thick Client</div>
+          <div class="t-out">Cloud · AI / LLM</div>
           <div style="margin-top:8px"><span class="t-prompt">❯</span> <span class="t-cmd">cat status.txt</span></div>
           <div class="t-out warn">⚡ Open to full-time roles</div>
           <div style="margin-top:8px"><span class="t-prompt">❯</span> <span class="t-cmd" id="cursor-line">_</span></div>
@@ -497,49 +544,50 @@ footer{
 
       <article class="project-card featured reveal">
         <div class="project-number">01 · featured</div>
-        <h3 class="project-title">SAST Multi-Agent Security Scanner</h3>
-        <p class="project-desc">AI-powered SAST pipeline using 3 local LLM agents (Scanner → Critic → Reporter) running on DeepSeek via Ollama. Detects 20+ OWASP vulnerability categories, reduces false positives through agent triage, and generates PDF/Markdown reports. Built as CSEC 594 capstone at DePaul.</p>
+        <h3 class="project-title">AI-Assisted SAST Multi-Agent Security Scanner</h3>
+        <p class="project-desc">Three-agent LLM pipeline (Scanner → Critic → Reporter) built on DeepSeek Coder v2 via Ollama, running fully offline for automated SAST across 20+ file types with zero external data transmission. The Critic agent re-evaluates findings against surrounding code context, cutting false positives by 60%. React/TypeScript frontend on a FastAPI backend, open-sourced on GitHub.</p>
         <div class="project-tags">
-          <span class="tag">Python</span><span class="tag">LLM Agents</span><span class="tag">DeepSeek</span>
-          <span class="tag">FastAPI</span><span class="tag">OWASP</span><span class="tag">ReportLab</span>
+          <span class="tag">Python</span><span class="tag">FastAPI</span><span class="tag">React</span>
+          <span class="tag">TypeScript</span><span class="tag">Ollama</span><span class="tag">LLM Agents</span><span class="tag">SAST</span>
         </div>
-        <a class="project-link" href="https://github.com/pranavrattehallim/sast-multi-agent-scanner" target="_blank">↗ github.com/pranavrattehallim/sast-multi-agent-scanner</a>
+        <a class="project-link" href="https://github.com/pranavrattehallim/sast-multi-agent-scanner" target="_blank" rel="noopener">↗ github.com/pranavrattehallim/sast-multi-agent-scanner</a>
       </article>
 
       <article class="project-card reveal" style="transition-delay:.1s">
         <div class="project-number">02</div>
-        <h3 class="project-title">Distributed File Retrieval System</h3>
-        <p class="project-desc">C++ + gRPC + Protocol Buffers system that indexes and searches files across multiple distributed clients. Optimized for concurrent access with real-time indexing and performance benchmarks.</p>
+        <h3 class="project-title">Cybersecurity Risk Assessment &amp; Policy Development</h3>
+        <p class="project-desc">Led a 6-member team through a GRC risk assessment for a nonprofit client via the DePaul Cybersecurity Clinic, owning client communication and stakeholder meetings across every business unit. Executed control analysis across enterprise, data, network, endpoint, and software domains using CIS Critical Controls v8 and CIS RAM maturity scoring, then delivered a security plan covering physical access, data flow, GLBA-regulated data handling, and service transition.</p>
         <div class="project-tags">
-          <span class="tag">C++</span><span class="tag">gRPC</span><span class="tag">ProtoBuf</span><span class="tag">Distributed Systems</span>
+          <span class="tag">CIS Controls v8</span><span class="tag">CIS RAM</span><span class="tag">GLBA</span>
+          <span class="tag">NIST SP 800-53</span><span class="tag">GRC</span><span class="tag">Policy</span>
         </div>
-        <a class="project-link" href="https://github.com/pranavrattehallim/Distributed-File-Retrieval-System" target="_blank">↗ View on GitHub</a>
+        <a class="project-link" href="https://drive.google.com/file/d/1zNjkw9Q175eJ8sX13y_LJUMhHH3j7Muo/view?usp=sharing" target="_blank" rel="noopener">↗ Read the full report (PDF)</a>
       </article>
 
       <article class="project-card reveal" style="transition-delay:.15s">
         <div class="project-number">03</div>
-        <h3 class="project-title">Automated Security Scanning in CI/CD</h3>
-        <p class="project-desc">Implemented DevSecOps pipelines integrating SAST/DAST and software composition analysis (WebInspect, BlackDuck, CodeDX, Azure) for continuous security testing. Reduced manual effort and improved SSDLC compliance significantly.</p>
+        <h3 class="project-title">Advanced Network Security — Identity &amp; Perimeter Lab</h3>
+        <p class="project-desc">Configured SAML-based SSO integration, issued and managed certificates through a PKI hierarchy, and implemented firewall rule sets in a lab environment using Authentik, as part of graduate coursework in Advanced Network Security.</p>
         <div class="project-tags">
-          <span class="tag">DevSecOps</span><span class="tag">Azure</span><span class="tag">Docker</span><span class="tag">CI/CD</span>
+          <span class="tag">Authentik</span><span class="tag">SAML</span><span class="tag">PKI</span><span class="tag">Firewall Rules</span><span class="tag">SSO</span>
         </div>
       </article>
 
       <article class="project-card reveal" style="transition-delay:.2s">
         <div class="project-number">04</div>
-        <h3 class="project-title">Crypto Prediction via Sentiment Analysis</h3>
-        <p class="project-desc">Self-learning ML model forecasting cryptocurrency rates using Twitter/X sentiment data. Achieved 86% accuracy. Won inter-college "Best Project Award" — recognized for practical application in forecasting and university grant advisory.</p>
+        <h3 class="project-title">Automated Security Scanning in CI/CD</h3>
+        <p class="project-desc">Built Dockerized DevSecOps pipelines integrating SAST, DAST, and software composition analysis (WebInspect, Black Duck, CodeDX, Azure DevOps) for continuous security testing across enterprise engagements. Cut engagement turnaround from five days to two while improving SSDLC compliance.</p>
         <div class="project-tags">
-          <span class="tag">Python</span><span class="tag">ML</span><span class="tag">NLP</span><span class="tag">Web API</span><span class="tag">Data Mining</span>
+          <span class="tag">DevSecOps</span><span class="tag">Docker</span><span class="tag">Azure DevOps</span><span class="tag">CI/CD</span><span class="tag">Python</span>
         </div>
       </article>
 
       <article class="project-card reveal" style="transition-delay:.25s">
         <div class="project-number">05</div>
-        <h3 class="project-title">Business Management App</h3>
-        <p class="project-desc">Full-stack app for Shree Gajanana & Co. optimizing import/export operations. Built with React, D3.js, and Node.js. Reduced a 96-hour manual reconciliation process down to ~45 hours through automated workflows and visual dashboards.</p>
+        <h3 class="project-title">Adversarial Prompt &amp; Tool-Misuse Testing Harness</h3>
+        <p class="project-desc">Custom Python tooling for adversarial prompt and agentic tool-misuse testing across client LLM integrations, mapped to the OWASP Top 10 for LLMs. Surfaced prompt injection vectors and information disclosure findings that commercial DAST tooling missed.</p>
         <div class="project-tags">
-          <span class="tag">JavaScript</span><span class="tag">React</span><span class="tag">D3.js</span><span class="tag">Node.js</span>
+          <span class="tag">Python</span><span class="tag">OWASP LLM Top 10</span><span class="tag">Prompt Injection</span><span class="tag">Agentic AI</span>
         </div>
       </article>
 
@@ -558,33 +606,39 @@ footer{
     <div class="timeline reveal">
 
       <div class="timeline-item">
-        <div class="tl-date">Jan 2026<br/>Present</div>
+        <div class="tl-date">Jan 2026<br/>Jun 2026</div>
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <div class="tl-badge">⚡ Current</div>
           <div class="tl-role">Application Security Intern</div>
           <div class="tl-company">Inookey</div>
-          <p class="tl-desc">Embedded DevSecOps into the SDLC by integrating SAST/DAST checks and secure-coding feedback loops for web apps and APIs, complemented by manual penetration testing. Partnered directly with the CTO on pre–go-live compliance and security readiness — owning required controls, documentation, and risk sign-offs before release.</p>
+          <ul class="tl-list">
+            <li>Assessed 8 AI-powered and agentic AI applications against the OWASP Top 10 for LLMs, identifying 2 prompt injection vectors and 5 information disclosure findings from model hallucination leaking backend context.</li>
+            <li>Built custom Python scripts for adversarial prompt and tool-misuse testing across client LLM integrations, surfacing issues commercial DAST tooling missed.</li>
+            <li>Partnered with the CTO on pre–go-live security readiness, validating controls and remediation evidence prior to production release.</li>
+          </ul>
         </div>
       </div>
 
       <div class="timeline-item">
-        <div class="tl-date">Jan 2026<br/>Present</div>
+        <div class="tl-date">Jan 2026<br/>Jun 2026</div>
         <div class="tl-dot"></div>
         <div class="tl-content">
           <div class="tl-role">Director of Membership</div>
           <div class="tl-company">ISACA — DePaul Chapter</div>
-          <p class="tl-desc">Lead chapter membership operations: recruitment, onboarding, and engagement initiatives. Coordinate with the executive board to plan events, workshops, and speaker sessions — strengthening the chapter's security community presence at DePaul.</p>
+          <p class="tl-desc">Led chapter membership operations: recruitment, onboarding, and engagement initiatives. Coordinated with the executive board to plan events, workshops, and speaker sessions — strengthening the chapter's security community presence at DePaul.</p>
         </div>
       </div>
 
       <div class="timeline-item">
-        <div class="tl-date">Dec 2024<br/>Present</div>
+        <div class="tl-date">Dec 2024<br/>Jun 2026</div>
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <div class="tl-role">Student Assistant — ID Services & Security</div>
+          <div class="tl-role">Student Assistant — ID Services &amp; Security</div>
           <div class="tl-company">DePaul University</div>
-          <p class="tl-desc">SOC-style work reviewing auth/security alerts, performing triage, documenting incidents with root-cause analysis, and updating runbooks. Led security awareness initiatives delivering training to non-technical staff.</p>
+          <ul class="tl-list">
+            <li>Triaged security alerts and led incident response activities including detection, triage, root cause analysis, and documentation of findings.</li>
+            <li>Maintained OAuth 2.0 and OIDC authentication workflows, and maintained and improved IR playbooks and runbooks alongside full-time M.S. coursework.</li>
+          </ul>
         </div>
       </div>
 
@@ -594,17 +648,12 @@ footer{
         <div class="tl-content">
           <div class="tl-role">Penetration Tester</div>
           <div class="tl-company">Happiest Minds Technologies</div>
-          <p class="tl-desc">Delivered end-to-end pentesting across web, API, cloud & thick-client apps. Performed SAST/DAST, secure code reviews, and OWASP ASVS-aligned threat modeling. Built CI/CD-integrated tooling automating vulnerability discovery across ~90 internal apps. Recognized "Best Team," FY 2023 Q3.</p>
-        </div>
-      </div>
-
-      <div class="timeline-item">
-        <div class="tl-date">Jul 2021<br/>Mar 2023</div>
-        <div class="tl-dot"></div>
-        <div class="tl-content">
-          <div class="tl-role">Development Intern</div>
-          <div class="tl-company">Société Générale</div>
-          <p class="tl-desc">Improved front-end applications (HTML/CSS/JS/C#) and performed secure code reviews. Assisted vulnerability management by triaging issues, validating fixes, and evidencing remediation for audit stakeholders.</p>
+          <ul class="tl-list">
+            <li>Delivered 140+ application assessments (60 web/API, 80 thick-client) across grey-box, black-box, internal network, and cloud configuration engagements for enterprise clients including a multinational oil &amp; gas operator in Abu Dhabi, using Burp Suite, Nmap, WebInspect, Black Duck, OWASP ZAP, CodeDX, dnSpy, Ghidra, and Metasploit.</li>
+            <li>Identified 25+ critical and 45+ high-severity vulnerabilities; chained CSRF and IDOR flaws into remote shell access, demonstrating full compromise of the application host.</li>
+            <li>Owned the vulnerability management lifecycle: identification via SAST, DAST, and SCA, CVSS 3.0 triage, CVE tracking, and exploit retesting to validate remediation with engineering teams. Built ServiceNow dashboards tracking vulnerability posture and remediation SLAs.</li>
+            <li>Integrated security testing into CI/CD pipelines with Dockerized tooling, cutting engagement turnaround from 5 days to 2; authored 45+ client-facing reports and mentored 3 junior testers. Recognized "Best Team," FY 2023 Q3.</li>
+          </ul>
         </div>
       </div>
 
@@ -626,15 +675,16 @@ footer{
         <div>
           <div class="edu-degree">Master of Science — Cybersecurity</div>
           <div class="edu-school">DePaul University, Chicago, IL</div>
-          <div class="edu-meta">GPA 3.85 · Expected Jun 2026<br/>Major: Computer Security</div>
+          <div class="edu-meta">GPA 3.892 · Conferred Jun 2026<br/>Concentration: Computer Security</div>
+          <div class="edu-courses">Security Capstone · IS Security Risk Assessment · Governance Policies · Computer Security · Network Security I &amp; II · Digital Forensic Techniques · Info Security Management · Mis/Disinformation Operations</div>
         </div>
       </div>
       <div class="edu-card">
         <div class="edu-icon">BE</div>
         <div>
           <div class="edu-degree">Bachelor of Engineering — Information Science</div>
-          <div class="edu-school">National Institute of Engineering, Mysuru, India</div>
-          <div class="edu-meta">GPA 3.0 · 2018 – 2022</div>
+          <div class="edu-school">The National Institute of Engineering, Mysuru, India</div>
+          <div class="edu-meta">Aug 2018 – Jul 2022</div>
         </div>
       </div>
     </div>
@@ -646,7 +696,7 @@ footer{
   <div class="container">
     <div class="section-header reveal">
       <div class="section-label"><span>05</span> skills</div>
-      <h2 class="section-title">Tools & Technologies</h2>
+      <h2 class="section-title">Tools &amp; Technologies</h2>
       <div class="section-line"></div>
     </div>
     <div class="skills-layout reveal">
@@ -654,24 +704,51 @@ footer{
       <div class="skill-group">
         <div class="skill-group-title">Offensive Security</div>
         <div class="skill-list">
-          <span class="skill-item">Penetration Testing (Web/API)</span>
-          <span class="skill-item">Burp Suite Pro</span>
-          <span class="skill-item">Metasploit Framework</span>
+          <span class="skill-item">Penetration Testing (Web, API, Thick Client, Network, Cloud)</span>
+          <span class="skill-item">Burp Suite</span>
+          <span class="skill-item">Metasploit</span>
           <span class="skill-item">Nmap / Nessus</span>
-          <span class="skill-item">OWASP Top 10 / ASVS</span>
-          <span class="skill-item">Threat Modeling</span>
+          <span class="skill-item">WebInspect</span>
+          <span class="skill-item">Kali Linux</span>
         </div>
       </div>
 
       <div class="skill-group">
-        <div class="skill-group-title">AppSec & DevSecOps</div>
+        <div class="skill-group-title">AI &amp; LLM Security</div>
         <div class="skill-list">
-          <span class="skill-item">SAST / DAST</span>
-          <span class="skill-item">Secure Code Review</span>
-          <span class="skill-item">CI/CD Security (Azure)</span>
-          <span class="skill-item">WebInspect / BlackDuck</span>
-          <span class="skill-item">CodeDX / SCA</span>
-          <span class="skill-item">Docker Security</span>
+          <span class="skill-item">OWASP Top 10 for LLMs</span>
+          <span class="skill-item">Prompt Injection</span>
+          <span class="skill-item">Jailbreaking</span>
+          <span class="skill-item">Agentic Tool Misuse</span>
+          <span class="skill-item">Adversarial Prompt Testing</span>
+          <span class="skill-item">GenAI Threat Modeling</span>
+          <span class="skill-item">Ollama</span>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <div class="skill-group-title">AppSec &amp; DevSecOps</div>
+        <div class="skill-list">
+          <span class="skill-item">SAST / DAST / SCA</span>
+          <span class="skill-item">Semgrep / Snyk / Black Duck</span>
+          <span class="skill-item">Vulnerability Management</span>
+          <span class="skill-item">CI/CD Security Integration</span>
+          <span class="skill-item">Docker / GitHub Actions</span>
+          <span class="skill-item">OWASP ZAP / CodeDX</span>
+          <span class="skill-item">dnSpy / Ghidra</span>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <div class="skill-group-title">Frameworks &amp; Compliance</div>
+        <div class="skill-list">
+          <span class="skill-item">OWASP Top 10 / CWE</span>
+          <span class="skill-item">CVSS 3.0</span>
+          <span class="skill-item">NIST SP 800-53</span>
+          <span class="skill-item">CIS Critical Controls v8</span>
+          <span class="skill-item">CIS RAM</span>
+          <span class="skill-item">GLBA</span>
+          <span class="skill-item">Incident Response / IR Playbooks</span>
         </div>
       </div>
 
@@ -679,23 +756,23 @@ footer{
         <div class="skill-group-title">Languages</div>
         <div class="skill-list">
           <span class="skill-item">Python</span>
-          <span class="skill-item">C / C++</span>
-          <span class="skill-item">JavaScript / TypeScript</span>
-          <span class="skill-item">C# / .NET</span>
+          <span class="skill-item">TypeScript / JavaScript</span>
+          <span class="skill-item">PowerShell</span>
           <span class="skill-item">Bash / Shell</span>
+          <span class="skill-item">C / C++</span>
           <span class="skill-item">SQL</span>
         </div>
       </div>
 
       <div class="skill-group">
-        <div class="skill-group-title">Frameworks & Cloud</div>
+        <div class="skill-group-title">Cloud &amp; Platforms</div>
         <div class="skill-list">
-          <span class="skill-item">FastAPI / Node.js</span>
-          <span class="skill-item">React / D3.js</span>
-          <span class="skill-item">Azure / AWS basics</span>
-          <span class="skill-item">gRPC / ProtoBuf</span>
-          <span class="skill-item">Firebase</span>
-          <span class="skill-item">LLM / Ollama / RAG</span>
+          <span class="skill-item">AWS</span>
+          <span class="skill-item">Azure / Azure DevOps</span>
+          <span class="skill-item">ServiceNow</span>
+          <span class="skill-item">OAuth 2.0 / OIDC</span>
+          <span class="skill-item">React / FastAPI</span>
+          <span class="skill-item">Authentik / SAML / PKI</span>
         </div>
       </div>
 
@@ -720,7 +797,7 @@ footer{
           </div>
           <div>
             <div class="contact-label">EMAIL</div>
-            <div class="contact-val"><a href="mailto:rattehallipranav@gmail.com">rattehallipranav@gmail.com</a></div>
+            <div class="contact-val"><a href="mailto:pranavjobapps@gmail.com">pranavjobapps@gmail.com</a></div>
           </div>
         </div>
         <div class="contact-row">
@@ -738,7 +815,7 @@ footer{
           </div>
           <div>
             <div class="contact-label">LINKEDIN</div>
-            <div class="contact-val"><a href="https://www.linkedin.com/in/pranavrattehalli" target="_blank">linkedin.com/in/pranavrattehalli</a></div>
+            <div class="contact-val"><a href="https://www.linkedin.com/in/pranavrattehalli" target="_blank" rel="noopener">linkedin.com/in/pranavrattehalli</a></div>
           </div>
         </div>
         <div class="contact-row">
@@ -747,7 +824,16 @@ footer{
           </div>
           <div>
             <div class="contact-label">GITHUB</div>
-            <div class="contact-val"><a href="https://github.com/pranavrattehallim" target="_blank">github.com/pranavrattehallim</a></div>
+            <div class="contact-val"><a href="https://github.com/pranavrattehallim" target="_blank" rel="noopener">github.com/pranavrattehallim</a></div>
+          </div>
+        </div>
+        <div class="contact-row">
+          <div class="contact-icon">
+            <svg width="16" height="16" fill="none" stroke="var(--brand)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div>
+            <div class="contact-label">LOCATION</div>
+            <div class="contact-val">Chicago, IL · Open to relocate</div>
           </div>
         </div>
       </div>
@@ -758,10 +844,14 @@ footer{
         </svg>
         <h3 style="font-family:var(--mono);font-size:.88rem;color:#d8ecf2;margin-bottom:10px">Download Résumé</h3>
         <p>Full work history, certifications, and technical skills — one page, PDF format.</p>
-        <a class="btn-primary" href="https://drive.google.com/file/d/1u86enbh--daYbwlxf9Fn0Wz07kOGXk4I/view?usp=share_link" target="_blank" style="justify-content:center">Download PDF →</a>
+        <a class="btn-primary" href="https://drive.google.com/file/d/1u86enbh--daYbwlxf9Fn0Wz07kOGXk4I/view?usp=share_link" target="_blank" rel="noopener" style="justify-content:center">Download PDF →</a>
         <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
           <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);letter-spacing:.1em">OPEN TO</div>
-          <div style="font-family:var(--mono);font-size:.82rem;color:var(--brand);margin-top:6px">Full-time AppSec / Pentesting roles<br/>Starting Summer 2026 · Chicago / Remote</div>
+          <div style="font-family:var(--mono);font-size:.82rem;color:var(--brand);margin-top:6px">Full-time AppSec / Pentesting roles<br/>Chicago · Remote · Open to relocate</div>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);letter-spacing:.1em">CERTIFICATION</div>
+          <div style="font-family:var(--mono);font-size:.82rem;color:var(--brand);margin-top:6px">OSCP (PEN-200) — in progress<br/>Exam scheduled October 2026</div>
         </div>
       </div>
     </div>
@@ -784,6 +874,13 @@ const navlinks = document.getElementById('navlinks');
 menuBtn?.addEventListener('click', () => {
   const open = navlinks.classList.toggle('open');
   menuBtn.setAttribute('aria-expanded', String(open));
+});
+
+navlinks?.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    navlinks.classList.remove('open');
+    menuBtn?.setAttribute('aria-expanded', 'false');
+  });
 });
 
 // Scroll reveal
