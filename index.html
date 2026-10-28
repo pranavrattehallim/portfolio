@@ -108,10 +108,7 @@ body{
   transition:background-color .4s ease,color .4s ease; /* ease theme changes, no brightness jump */
 }
 
-/* ---------- Koi pond: a living pixel-mosaic background behind the page ----------
-   Canvas fixed to the viewport, under the content (z-index 0). Content sits on
-   z-index 1 so koi glide through the gaps and dim beneath cards, which carry
-   data-koi-avoid. */
+/* ---------- Koi pond: a living pixel-mosaic background behind the page ---------- */
 #koi-canvas{
   position:fixed; inset:0; width:100%; height:100%;
   z-index:0; pointer-events:none; display:block;
@@ -1250,10 +1247,27 @@ boot();
       // fish shape stays legible, not just its orange markings.
       white: dark ? '#EDEFF2' : '#F4F7FA',
       whiteShade: dark ? '#AEB6BE' : '#BFCAD4',
-      red: v('--red', dark ? '#FF453A' : '#F5402F'),
-      redDeep: dark ? '#C7342B' : '#CE1F12',
-      orange: v('--orange', dark ? '#FF9F0A' : '#F2792A'),
-      orangeDeep: dark ? '#C2600A' : '#C2521A',
+      // a colorful set of koi markings; each fish picks one, pinned to its seed.
+      // [bright, deep] pairs, tuned for each theme.
+      markings: dark
+        ? [
+            ['#FF6FA5', '#C7497C'], // pink
+            ['#FF8A5B', '#C75E35'], // coral
+            ['#FFC24B', '#C78E2A'], // gold
+            ['#FF5E5E', '#C73B3B'], // red
+            ['#7FB4FF', '#4E79C7'], // blue koi
+            ['#B98BFF', '#7F57C7'], // lilac
+            ['#5FD0C0', '#369182'], // jade
+          ]
+        : [
+            ['#F65C9C', '#C23A72'], // pink
+            ['#F2792A', '#C2521A'], // coral
+            ['#E8A32A', '#B47A12'], // gold
+            ['#F5402F', '#CE1F12'], // red
+            ['#4E8DD6', '#2F63A8'], // blue koi
+            ['#8B63D6', '#5E3DA8'], // lilac
+            ['#2FB0A0', '#1E8072'], // jade
+          ],
       black: dark ? '#0C0F12' : '#23272C',
       fin: dark ? '#9FB4C0' : '#AEBEC9',
     };
@@ -1625,10 +1639,12 @@ boot();
   }
 
   function koiColors(k) {
-    // kohaku/sanke/tancho all share the warm ivory+orange palette of the reference
+    // each koi gets its own marking color from the set, pinned to its seed so
+    // it never flickers; the school reads as colorful rather than one hue.
+    const m = COL.markings[(Math.abs(k.seed) + k.id) % COL.markings.length];
     return {
       base: COL.white, baseShade: COL.whiteShade,
-      spot: COL.orange, spotDeep: COL.orangeDeep,
+      spot: m[0], spotDeep: m[1],
       fleck: k.variety === 'sanke' ? COL.black : null,
     };
   }
@@ -1685,9 +1701,9 @@ boot();
     const fi = Math.floor(0.26 * (KOI_NODES - 1));
     const finX = n[fi * 2], finY = n[fi * 2 + 1];
     const finSwing = (Math.sin(k.finPhase) * 0.5 + 0.7);
-    const finReach = maxW * 2.0 * finSwing;
+    const finReach = maxW * 1.15 * finSwing;   // smaller, neater pectoral fins
     const tailX = n[(KOI_NODES - 1) * 2], tailY = n[(KOI_NODES - 1) * 2 + 1];
-    const tailReach = maxW * 2.2;
+    const tailReach = maxW * 1.2;              // petite tail, not a broad fan
 
     // spot centers (pinned per koi)
     const spots = [];
