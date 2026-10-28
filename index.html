@@ -107,6 +107,17 @@ body{
   font-optical-sizing:auto;
   transition:background-color .4s ease,color .4s ease; /* ease theme changes, no brightness jump */
 }
+
+/* ---------- Koi pond: a living pixel-mosaic background behind the page ----------
+   Canvas fixed to the viewport, under the content (z-index 0). Content sits on
+   z-index 1 so koi glide through the gaps and dim beneath cards, which carry
+   data-koi-avoid. */
+#koi-canvas{
+  position:fixed; inset:0; width:100%; height:100%;
+  z-index:0; pointer-events:none; display:block;
+}
+body > :not(#koi-canvas):not(.skip){ position:relative; z-index:1; }
+.nav{ z-index:5; }
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;letter-spacing:inherit;background:none;border:0;cursor:pointer}
 a,button,input,summary{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -442,6 +453,7 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem
 </style>
 </head>
 <body>
+<canvas id="koi-canvas" aria-hidden="true"></canvas>
 <div id="topSentinel" aria-hidden="true" style="position:absolute;top:0;height:1px;width:1px"></div>
 <a class="skip" href="#main">Skip to content</a>
 
@@ -769,6 +781,10 @@ const mq = q => matchMedia(q);
 const rm = mq('(prefers-reduced-motion: reduce)'), rt = mq('(prefers-reduced-transparency: reduce)');
 let reduced = rm.matches; rm.addEventListener?.('change', e => { reduced = e.matches; });
 $('#year').textContent = new Date().getFullYear();
+
+/* ---------- Koi pond: mark the content the koi should swim around ---------- */
+$$('.card, .surface, .sec-head, .redact-note, .term, .hero-grid > div, .block > .wrap > :not(.sec-head):not(.ledger):not(.redact-note)')
+  .forEach(el => el.setAttribute('data-koi-avoid', ''));
 
 /* ---------- Spring ----------
    Apple's two designer parameters: response (seconds, not a duration) and
@@ -1170,6 +1186,634 @@ async function boot() {
 }
 boot();
 })();
+
+/* ===== Koi pond (independent module) ===== */
+/* ============================================================================
+   KOI POND — full-page living background
+   Vanilla canvas. No deps. Theme-aware via the page's CSS custom properties.
+   A light security motif: feeding sends out a concentric "scan" ring, and a
+   faint packet-trace drifts across the deep water.
+   ============================================================================ */
+(() => {
+  const TAU = Math.PI * 2;
+  const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+  const rand = (lo, hi) => lo + Math.random() * (hi - lo);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smoothstep = (e0, e1, x) => {
+    const t = clamp((x - e0) / (e1 - e0), 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+  const angleDiff = (a, b) => {
+    let d = (b - a) % TAU;
+    if (d > Math.PI) d -= TAU;
+    if (d < -Math.PI) d += TAU;
+    return d;
+  };
+  // Deterministic hash -> [0,1), so a koi's spots stay pinned to its body.
+  const hash = (x, y, z) => {
+    let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 1442695041);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+
+  const rm = matchMedia('(prefers-reduced-motion: reduce)');
+  const canvas = document.getElementById('koi-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d', { alpha: true });
+
+  const KOI_NODES = 14;        // spine points, snout -> tail
+  const STEP = 1 / 60;
+  const MAX_STEPS = 4;
+  const MEASURE_EVERY = 30;    // frames between content re-measures
+  const MERGE_GAP = 140;
+
+  /* ---- palette: read live from the page so light/dark + theme follow along ---- */
+  let COL = {};
+  function readPalette() {
+    const cs = getComputedStyle(document.documentElement);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const v = (n, f) => (cs.getPropertyValue(n).trim() || f);
+    COL = {
+      dark,
+      // water field (solid, so the page --bg shows only through the pixel gaps)
+      waterBase: dark ? '#141414' : '#E7ECF0',
+      shimmer: dark ? '#2A2C30' : '#FFFFFF',
+      shimmerDark: dark ? '#0C0C0E' : '#D3DBE2',
+      ambient: dark ? '#3A3C40' : '#C2CBD3',   // sparse glyph-like texture
+      ripple: dark ? '#8FD6EC' : '#4E8DB0',
+      scan: v('--teal', dark ? '#40C8E0' : '#30B0C7'),
+      accent: v('--accent', dark ? '#2997FF' : '#0071E3'),
+      pellet: dark ? '#D2B478' : '#9A6E3C',
+      // koi body — ivory, with orange markings like the reference.
+      // On light water the body is pulled a touch cooler/greyer so the whole
+      // fish shape stays legible, not just its orange markings.
+      white: dark ? '#EDEFF2' : '#F4F7FA',
+      whiteShade: dark ? '#AEB6BE' : '#BFCAD4',
+      red: v('--red', dark ? '#FF453A' : '#F5402F'),
+      redDeep: dark ? '#C7342B' : '#CE1F12',
+      orange: v('--orange', dark ? '#FF9F0A' : '#F2792A'),
+      orangeDeep: dark ? '#C2600A' : '#C2521A',
+      black: dark ? '#0C0F12' : '#23272C',
+      fin: dark ? '#9FB4C0' : '#AEBEC9',
+    };
+  }
+  readPalette();
+
+  /* ========================= WORLD ========================= */
+  let W = 0, H = 0, DPR = 1, time = 0;
+  const pointer = { x: -1e4, y: -1e4, active: false, speed: 0 };
+  const koi = [];
+  const pellets = [];
+  const ripples = [];      // {x,y,r,max,life,kind:'drop'|'wake'|'scan'}
+  const packets = [];      // deep-water security motif: faint drifting dashes
+  let avoid = [];          // content boxes koi steer around / dim beneath
+
+  const VARIETIES = [
+    ['kohaku', 3],   // white + red
+    ['sanke', 2],    // white + red + black fleck
+    ['tancho', 1],   // white body, single red crown
+  ];
+  const TOTAL_W = VARIETIES.reduce((s, [, w]) => s + w, 0);
+  function pickVariety() {
+    let r = Math.random() * TOTAL_W;
+    for (const [name, w] of VARIETIES) { r -= w; if (r <= 0) return name; }
+    return 'kohaku';
+  }
+
+  function spawnKoi(x, y) {
+    const length = rand(58, 104);
+    const heading = rand(0, TAU);
+    const nodes = new Float32Array(KOI_NODES * 2);
+    const seg = length / (KOI_NODES - 1);
+    for (let i = 0; i < KOI_NODES; i++) {
+      nodes[i * 2] = x - Math.cos(heading) * seg * i;
+      nodes[i * 2 + 1] = y - Math.sin(heading) * seg * i;
+    }
+    return {
+      id: koi.length,
+      variety: pickVariety(),
+      length, seg,
+      nodes, heading,
+      speed: rand(26, 40),
+      baseSpeed: rand(26, 40),
+      phase: rand(0, TAU),
+      turn: 0,
+      wander: rand(0, TAU),
+      curiosity: rand(0.15, 0.85),
+      depth: rand(0.55, 0.9),
+      depthTarget: rand(0.55, 0.95),
+      nextDepth: rand(3, 9),
+      rush: 0,
+      food: null,
+      finPhase: rand(0, TAU),
+      startle: 0,
+      gulp: 0,
+      seed: (Math.random() * 1e9) | 0,
+    };
+  }
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = rect.width; H = rect.height;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    // stock the pond relative to area, once
+    if (koi.length === 0) {
+      const target = clamp(Math.round((W * H) / 150000), 4, 11);
+      for (let i = 0; i < target; i++) koi.push(spawnKoi(rand(0, W), rand(0, H)));
+      for (let i = 0; i < 5; i++)
+        packets.push({ x: rand(0, W), y: rand(0, H), a: rand(0, TAU), v: rand(6, 14), len: rand(30, 80) });
+    }
+  }
+
+  /* ---- measure content boxes to avoid ---- */
+  function mergeNearby(boxes) {
+    const merged = [];
+    for (const b of [...boxes].sort((p, q) => p.top - q.top)) {
+      const near = merged.find(
+        (m) => b.top - m.bottom < MERGE_GAP && b.left - m.right < MERGE_GAP && m.left - b.right < MERGE_GAP
+      );
+      if (!near) { merged.push({ ...b }); continue; }
+      near.left = Math.min(near.left, b.left);
+      near.right = Math.max(near.right, b.right);
+      near.top = Math.min(near.top, b.top);
+      near.bottom = Math.max(near.bottom, b.bottom);
+    }
+    return merged;
+  }
+  function measureContent() {
+    // canvas is fixed to viewport, so viewport coords == canvas coords
+    const measured = Array.from(document.querySelectorAll('[data-koi-avoid]'), (el) => el.getBoundingClientRect())
+      .filter((b) => b.width > 0 && b.height > 0 && b.bottom > -40 && b.top < H + 40)
+      .map((b) => ({ left: b.left, top: b.top, right: b.right, bottom: b.bottom }));
+    avoid = mergeNearby(measured);
+  }
+
+  // signed push-out vector from the nearest avoid box edge (0 if deep inside/away)
+  function avoidForce(x, y, pad) {
+    let fx = 0, fy = 0;
+    for (const b of avoid) {
+      const l = b.left - pad, r = b.right + pad, t = b.top - pad, bt = b.bottom + pad;
+      if (x < l || x > r || y < t || y > bt) continue;
+      // inside the padded box: push toward nearest edge
+      const dl = x - l, dr = r - x, dt = y - t, db = bt - y;
+      const m = Math.min(dl, dr, dt, db);
+      const strength = smoothstep(0, pad * 2, (pad * 2 - m)) * 60;
+      if (m === dl) fx -= strength;
+      else if (m === dr) fx += strength;
+      else if (m === dt) fy -= strength;
+      else fy += strength;
+    }
+    return { fx, fy };
+  }
+  function dimAt(x, y) {
+    // 1 in open water, down toward 0.18 beneath content
+    let d = 1;
+    for (const b of avoid) {
+      if (x < b.left || x > b.right || y < b.top || y > b.bottom) continue;
+      const edge = 26;
+      const ex = Math.min(x - b.left, b.right - x);
+      const ey = Math.min(y - b.top, b.bottom - y);
+      const inset = Math.min(ex, ey);
+      d = Math.min(d, lerp(1, 0.16, smoothstep(0, edge, inset)));
+    }
+    return d;
+  }
+
+  function feed(x, y) {
+    pellets.push({ x, y, vy: 0, sink: rand(6, 10), settle: 1, taken: false });
+    ripples.push({ x, y, r: 2, max: rand(60, 90), life: 1, kind: 'drop' });
+    // security-motif: a scan ring expands from the feed point
+    ripples.push({ x, y, r: 4, max: rand(130, 190), life: 1, kind: 'scan' });
+    for (const k of koi) {
+      const d = Math.hypot(k.nodes[0] - x, k.nodes[1] - y);
+      if (d < 420) k.rush = Math.max(k.rush, clamp(1 - d / 420, 0, 1));
+    }
+  }
+
+  function startle(x, y) {
+    for (const k of koi) {
+      const d = Math.hypot(k.nodes[0] - x, k.nodes[1] - y);
+      if (d < 180) { k.startle = 1; k.fleeX = k.nodes[0] - x; k.fleeY = k.nodes[1] - y; }
+    }
+    ripples.push({ x, y, r: 2, max: 50, life: 1, kind: 'drop' });
+  }
+
+  /* ========================= STEP ========================= */
+  function step(dt) {
+    time += dt;
+
+    // ripples
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const rp = ripples[i];
+      const spd = rp.kind === 'scan' ? 150 : 80;
+      rp.r += spd * dt;
+      rp.life -= dt / (rp.kind === 'scan' ? 1.4 : 1.1);
+      if (rp.life <= 0 || rp.r > rp.max) ripples.splice(i, 1);
+    }
+
+    // packets drift and wrap
+    for (const p of packets) {
+      p.x += Math.cos(p.a) * p.v * dt;
+      p.y += Math.sin(p.a) * p.v * dt;
+      p.a += Math.sin(time * 0.2 + p.x * 0.001) * 0.2 * dt;
+      if (p.x < -100) p.x = W + 100; if (p.x > W + 100) p.x = -100;
+      if (p.y < -100) p.y = H + 100; if (p.y > H + 100) p.y = -100;
+    }
+
+    // pellets sink and settle
+    for (let i = pellets.length - 1; i >= 0; i--) {
+      const pl = pellets[i];
+      pl.settle = Math.max(0.35, pl.settle - dt * 0.12);
+      if (pl.taken) { pellets.splice(i, 1); continue; }
+      // claim by nearest hungry koi
+      if (Math.random() < 0.02) {
+        // slow drift
+        pl.x += rand(-4, 4) * dt; pl.y += rand(-4, 4) * dt;
+      }
+    }
+
+    for (const k of koi) {
+      const hx = k.nodes[0], hy = k.nodes[1];
+      k.rush = Math.max(0, k.rush - dt * 0.5);
+      k.startle = Math.max(0, k.startle - dt * 0.7);
+      k.gulp = Math.max(0, k.gulp - dt * 2.5);
+
+      // depth cycle
+      k.nextDepth -= dt;
+      if (k.nextDepth <= 0) { k.depthTarget = rand(0.5, 0.96); k.nextDepth = rand(4, 11); }
+      k.depth += (k.depthTarget - k.depth) * clamp(dt * 0.5, 0, 1);
+
+      // find / keep food
+      if (!k.food || k.food.taken) {
+        k.food = null;
+        let best = Infinity;
+        for (const pl of pellets) {
+          if (pl.taken) continue;
+          const d = Math.hypot(pl.x - hx, pl.y - hy);
+          if (d < 360 && d < best) { best = d; k.food = pl; }
+        }
+      }
+
+      // desired heading
+      let desired = k.heading;
+      let targetSpeed = k.baseSpeed;
+
+      if (k.startle > 0.01) {
+        desired = Math.atan2(k.fleeY, k.fleeX);
+        targetSpeed = k.baseSpeed * (1 + 2.2 * k.startle);
+      } else if (k.food) {
+        const d = Math.hypot(k.food.x - hx, k.food.y - hy);
+        desired = Math.atan2(k.food.y - hy, k.food.x - hx);
+        targetSpeed = k.baseSpeed * (1.3 + 1.4 * k.rush);
+        k.depthTarget = 0.95; // rise to eat
+        if (d < 12) { k.food.taken = true; k.food = null; k.gulp = 1; ripples.push({ x: hx, y: hy, r: 2, max: 36, life: 1, kind: 'wake' }); }
+      } else {
+        // wander (gentler, longer arcs)
+        k.wander += rand(-1, 1) * dt * 0.9;
+        desired = k.heading + Math.sin(k.wander) * 0.32;
+        // curiosity toward an active, slow-moving cursor
+        if (pointer.active) {
+          const d = Math.hypot(pointer.x - hx, pointer.y - hy);
+          if (pointer.speed < 900 && d < 340) {
+            const toP = Math.atan2(pointer.y - hy, pointer.x - hx);
+            desired = lerp(desired, toP, k.curiosity * smoothstep(340, 80, d));
+            targetSpeed = k.baseSpeed * 1.15;
+          } else if (pointer.speed > 1600 && d < 150) {
+            // sudden fast pointer nearby = flee
+            desired = Math.atan2(hy - pointer.y, hx - pointer.x);
+            targetSpeed = k.baseSpeed * 2.2;
+          }
+        }
+      }
+
+      // avoid content boxes
+      const af = avoidForce(hx, hy, 46);
+      if (af.fx || af.fy) {
+        const aAng = Math.atan2(af.fy, af.fx);
+        const w = clamp(Math.hypot(af.fx, af.fy) / 60, 0, 1);
+        desired = lerp(desired, aAng, w * 0.8);
+      }
+
+      // soft wall turn
+      const margin = 60;
+      if (hx < margin) desired = lerp(desired, 0, smoothstep(margin, 0, hx));
+      if (hx > W - margin) desired = lerp(desired, Math.PI, smoothstep(W - margin, W, hx));
+      if (hy < margin) desired = lerp(desired, Math.PI / 2, smoothstep(margin, 0, hy));
+      if (hy > H - margin) desired = lerp(desired, -Math.PI / 2, smoothstep(H - margin, H, hy));
+
+      // steer
+      const turnRate = (k.food || k.startle > 0.01 ? 3.6 : 1.5);
+      const dAng = angleDiff(k.heading, desired);
+      const applied = clamp(dAng, -turnRate * dt, turnRate * dt);
+      k.heading += applied;
+      k.turn = lerp(k.turn, applied / dt, clamp(dt * 6, 0, 1));
+
+      // speed + swim (calmer: slower tail beat, less speed coupling)
+      k.speed += (targetSpeed - k.speed) * clamp(dt * 2, 0, 1);
+      k.phase += dt * (1.9 + k.speed * 0.028) * (0.7 + 0.5 * clamp(k.speed / k.baseSpeed, 0, 2));
+      k.finPhase += dt * 1.6;
+
+      // move head
+      const nx = hx + Math.cos(k.heading) * k.speed * dt;
+      const ny = hy + Math.sin(k.heading) * k.speed * dt;
+      k.nodes[0] = nx; k.nodes[1] = ny;
+
+      // follow-the-leader spine with lateral tail sway
+      for (let i = 1; i < KOI_NODES; i++) {
+        const px = k.nodes[(i - 1) * 2], py = k.nodes[(i - 1) * 2 + 1];
+        let cx = k.nodes[i * 2], cy = k.nodes[i * 2 + 1];
+        let ax = cx - px, ay = cy - py;
+        const dist = Math.hypot(ax, ay) || 1;
+        ax /= dist; ay /= dist;
+        // body wave: lateral offset grows toward the tail (gentler amplitude)
+        const t = i / (KOI_NODES - 1);
+        const sway = Math.sin(k.phase - t * 2.6) * t * k.length * 0.03 * clamp(k.speed / k.baseSpeed, 0.4, 1.3);
+        const perpx = -ay, perpy = ax;
+        const tx = px + ax * k.seg + perpx * sway;
+        const ty = py + ay * k.seg + perpy * sway;
+        k.nodes[i * 2] = tx;
+        k.nodes[i * 2 + 1] = ty;
+      }
+
+      // occasional surface wake
+      if (k.depth > 0.85 && Math.random() < 0.01 && k.speed > k.baseSpeed * 0.8) {
+        const tailX = k.nodes[(KOI_NODES - 1) * 2], tailY = k.nodes[(KOI_NODES - 1) * 2 + 1];
+        ripples.push({ x: tailX, y: tailY, r: 2, max: 22, life: 1, kind: 'wake' });
+      }
+    }
+  }
+
+  /* ========================= RENDER ========================= */
+  /* ========================= RENDER (pixel-block mosaic) =========================
+     Everything is quantized to a square grid so the pond reads as chunky pixels.
+     Koi are rasterized cell-by-cell from their spine geometry; water is a
+     per-cell wash with a slow shimmer and a sparse ambient texture. */
+  const CELL = 11;                 // grid size in CSS px (one "pixel")
+  let cols = 0, rows = 0;          // grid dimensions
+
+  // small helpers to blend/quantize colors into the warm ramp
+  function paintCell(cx, cy, color, a) {
+    ctx.globalAlpha = a;
+    ctx.fillStyle = color;
+    // leave a hairline gap so cells read as discrete pixels
+    ctx.fillRect(cx * CELL, cy * CELL, CELL - 1, CELL - 1);
+  }
+
+  function drawWater() {
+    cols = Math.ceil(W / CELL);
+    rows = Math.ceil(H / CELL);
+    // base field — solid so the page --bg shows only at the gaps
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = COL.waterBase;
+    ctx.fillRect(0, 0, W, H);
+
+    // per-cell shimmer: a slow 2D wave gives faint lighter/darker pixels
+    for (let gy = 0; gy < rows; gy++) {
+      for (let gx = 0; gx < cols; gx++) {
+        const n = Math.sin(gx * 0.5 + time * 0.5) * Math.sin(gy * 0.6 - time * 0.4);
+        const h = hash(gx, gy, 3);
+        // ambient sparse texture — occasional dim pixel, like the reference's glyphs
+        if (h > 0.991) { paintCell(gx, gy, COL.ambient, 0.45 + 0.3 * n); continue; }
+        if (n > 0.6) paintCell(gx, gy, COL.shimmer, (n - 0.6) * 0.5);
+        else if (n < -0.62) paintCell(gx, gy, COL.shimmerDark, (-n - 0.62) * 0.45);
+      }
+    }
+
+    // deep packet traces, snapped to cells (security motif)
+    for (const p of packets) {
+      const steps = Math.ceil(p.len / CELL);
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const x = p.x - Math.cos(p.a) * p.len * t;
+        const y = p.y - Math.sin(p.a) * p.len * t;
+        if (s % 2 === 0) paintCell(Math.floor(x / CELL), Math.floor(y / CELL), COL.scan, 0.14);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawRipples() {
+    for (const rp of ripples) {
+      const a = clamp(rp.life, 0, 1);
+      const color = rp.kind === 'scan' ? COL.scan : COL.ripple;
+      const alpha = (rp.kind === 'scan' ? 0.4 : 0.55) * a;
+      // trace the ring onto cells
+      const circumference = Math.max(8, Math.round(rp.r * 0.9));
+      for (let i = 0; i < circumference; i++) {
+        const ang = (i / circumference) * TAU;
+        const x = rp.x + Math.cos(ang) * rp.r;
+        const y = rp.y + Math.sin(ang) * rp.r;
+        const gx = Math.floor(x / CELL), gy = Math.floor(y / CELL);
+        if (gx < 0 || gy < 0 || gx >= cols || gy >= rows) continue;
+        if (rp.kind === 'scan' && i % 2) continue;    // dashed scan ring
+        paintCell(gx, gy, color, alpha);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPellets() {
+    for (const pl of pellets) {
+      paintCell(Math.floor(pl.x / CELL), Math.floor(pl.y / CELL), COL.pellet, pl.settle);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function koiColors(k) {
+    // kohaku/sanke/tancho all share the warm ivory+orange palette of the reference
+    return {
+      base: COL.white, baseShade: COL.whiteShade,
+      spot: COL.orange, spotDeep: COL.orangeDeep,
+      fleck: k.variety === 'sanke' ? COL.black : null,
+    };
+  }
+
+  function bodyWidthAt(t) {
+    return Math.sin(Math.pow(t, 0.72) * Math.PI) * (1 - t * 0.25);
+  }
+
+  // spine as an array of {x,y,t}, for cell tests
+  function spineOf(k) {
+    const n = k.nodes, pts = [];
+    for (let i = 0; i < KOI_NODES; i++) pts.push({ x: n[i * 2], y: n[i * 2 + 1], t: i / (KOI_NODES - 1) });
+    return pts;
+  }
+
+  // nearest point on the spine to (x,y): returns {dist, t, segAng}
+  function nearestOnSpine(pts, x, y) {
+    let best = Infinity, bt = 0, ba = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const abx = b.x - a.x, aby = b.y - a.y;
+      const len2 = abx * abx + aby * aby || 1;
+      let u = ((x - a.x) * abx + (y - a.y) * aby) / len2;
+      u = clamp(u, 0, 1);
+      const px = a.x + abx * u, py = a.y + aby * u;
+      const d = Math.hypot(x - px, y - py);
+      if (d < best) { best = d; bt = a.t + (b.t - a.t) * u; ba = Math.atan2(aby, abx); }
+    }
+    return { dist: best, t: bt, segAng: ba };
+  }
+
+  function drawKoi(k) {
+    const n = k.nodes;
+    const headX = n[0], headY = n[1];
+    const dim = dimAt(headX, headY);
+    const surface = smoothstep(0.5, 1, k.depth);
+    const alpha = clamp(0.35 + 0.65 * surface, 0, 1) * dim;
+    if (alpha < 0.04) return;
+
+    const maxW = k.length * 0.155;   // a little leaner, more koi-like
+    const kc = koiColors(k);
+    const pts = spineOf(k);
+
+    // bounding box in cells (pad for fins)
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of pts) { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y); }
+    const pad = maxW * 2.6;
+    const gx0 = Math.max(0, Math.floor((minX - pad) / CELL));
+    const gy0 = Math.max(0, Math.floor((minY - pad) / CELL));
+    const gx1 = Math.min(cols - 1, Math.ceil((maxX + pad) / CELL));
+    const gy1 = Math.min(rows - 1, Math.ceil((maxY + pad) / CELL));
+
+    // precompute fin anchor + tail
+    const fi = Math.floor(0.26 * (KOI_NODES - 1));
+    const finX = n[fi * 2], finY = n[fi * 2 + 1];
+    const finSwing = (Math.sin(k.finPhase) * 0.5 + 0.7);
+    const finReach = maxW * 2.0 * finSwing;
+    const tailX = n[(KOI_NODES - 1) * 2], tailY = n[(KOI_NODES - 1) * 2 + 1];
+    const tailReach = maxW * 2.2;
+
+    // spot centers (pinned per koi)
+    const spots = [];
+    const spotCount = k.variety === 'tancho' ? 1 : 1 + Math.floor(hash(k.seed, 1, 2) * 2.3);
+    for (let s = 0; s < spotCount; s++) {
+      const st = k.variety === 'tancho' ? 0.12 : 0.2 + hash(k.seed, s, 7) * 0.55;
+      const idx = clamp(Math.round(st * (KOI_NODES - 1)), 0, KOI_NODES - 1);
+      spots.push({ x: n[idx * 2], y: n[idx * 2 + 1], r: bodyWidthAt(st) * maxW * (k.variety === 'tancho' ? 1.4 : 1.25) });
+    }
+
+    for (let gy = gy0; gy <= gy1; gy++) {
+      for (let gx = gx0; gx <= gx1; gx++) {
+        const x = gx * CELL + CELL / 2, y = gy * CELL + CELL / 2;
+        const near = nearestOnSpine(pts, x, y);
+        const halfW = bodyWidthAt(near.t) * maxW;
+
+        let color = null, a = alpha;
+        if (near.dist <= halfW + CELL * 0.1) {
+          // body cell — orange spot or ivory base
+          color = kc.base;
+          for (const sp of spots) {
+            if (Math.hypot(x - sp.x, y - sp.y) <= sp.r) { color = kc.spot; break; }
+          }
+          // subtle head/tail shading via t
+          if (color === kc.base && near.t > 0.72) { color = kc.baseShade; }
+          if (color === kc.spot && near.t > 0.5) { color = kc.spotDeep; }
+        } else {
+          // fin test: pectorals near finX/finY, caudal behind the tail
+          const dFin = Math.hypot(x - finX, y - finY);
+          const dTail = Math.hypot(x - tailX, y - tailY);
+          if (dFin < finReach && near.dist < halfW + finReach) { color = COL.fin; a = alpha * 0.5; }
+          else if (dTail < tailReach) { color = COL.fin; a = alpha * 0.5; }
+        }
+
+        if (color) {
+          // snap to a few brightness steps for the digital look
+          paintCell(gx, gy, color, Math.round(a * 4) / 4);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    drawWater();
+    drawRipples();
+    drawPellets();
+    const order = koi.slice().sort((a, b) => a.depth - b.depth);
+    for (const k of order) drawKoi(k);
+    ctx.globalAlpha = 1;
+  }
+
+  /* ========================= LOOP ========================= */
+  let raf = 0, last = 0, acc = 0, frames = 0, visible = true, disposed = false;
+
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    acc += dt;
+    let steps = 0;
+    while (acc >= STEP && steps < MAX_STEPS) { step(STEP); acc -= STEP; steps++; }
+    if (steps === MAX_STEPS) acc = 0;
+    if (++frames % MEASURE_EVERY === 0) measureContent();
+    render();
+    raf = requestAnimationFrame(frame);
+  }
+
+  function schedule() {
+    cancelAnimationFrame(raf);
+    if (disposed || !visible) return;
+    if (rm.matches) { drawStill(); return; }
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+
+  function drawStill() {
+    if (time < 4) { for (let i = 0; i < 240; i++) step(STEP); }
+    measureContent();
+    render();
+  }
+
+  /* ---- events ---- */
+  const toLocal = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    return { x, y, inside: x >= 0 && y >= 0 && x <= r.width && y <= r.height };
+  };
+  let lastPT = 0;
+  window.addEventListener('pointermove', (e) => {
+    const { x, y, inside } = toLocal(e);
+    const el = (e.timeStamp - lastPT) / 1000 || 0.016;
+    const sp = Math.hypot(x - pointer.x, y - pointer.y) / Math.max(0.001, el);
+    pointer.speed += (Math.min(sp, 6000) - pointer.speed) * 0.5;
+    lastPT = e.timeStamp;
+    pointer.x = x; pointer.y = y;
+    pointer.active = inside && e.pointerType !== 'touch';
+  }, { passive: true });
+
+  const INTERACTIVE = "a, button, input, textarea, select, label, summary, [role='button'], .term, [data-koi-ignore]";
+  window.addEventListener('click', (e) => {
+    if (rm.matches) return;
+    if (e.composedPath().some((nd) => nd instanceof Element && nd.matches && nd.matches(INTERACTIVE))) return;
+    if (window.getSelection && window.getSelection().toString()) return;
+    const { x, y, inside } = toLocal(e);
+    if (!inside) return;
+    feed(x, y);
+    if (window.posthog && window.posthog.capture) {
+      try { window.posthog.capture('koi_pond_fed', { pellet_count: pellets.length }); } catch (_) {}
+    }
+  });
+  window.addEventListener('blur', () => { pointer.active = false; pointer.speed = 0; });
+  document.documentElement.addEventListener('pointerleave', () => { pointer.active = false; pointer.speed = 0; });
+
+  const ro = new ResizeObserver(() => { resize(); if (rm.matches) drawStill(); });
+  ro.observe(canvas);
+  document.addEventListener('visibilitychange', () => { visible = !document.hidden; schedule(); });
+  rm.addEventListener && rm.addEventListener('change', schedule);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener &&
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readPalette(); if (rm.matches) drawStill(); });
+
+  resize();
+  measureContent();
+  schedule();
+})();
+
 </script>
 </body>
 </html>
