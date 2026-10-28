@@ -108,13 +108,14 @@ body{
   transition:background-color .4s ease,color .4s ease; /* ease theme changes, no brightness jump */
 }
 
-/* ---------- Koi pond: a living pixel-mosaic background behind the page ---------- */
+/* ---------- Koi pond: a living pixel-mosaic background behind the page ----------
+   z-index:-1 puts the canvas above the page background but below all content,
+   so nothing else needs its stacking touched (the nav, hamburger menu popover
+   and toast keep their own fixed positioning). */
 #koi-canvas{
   position:fixed; inset:0; width:100%; height:100%;
-  z-index:0; pointer-events:none; display:block;
+  z-index:-1; pointer-events:none; display:block;
 }
-body > :not(#koi-canvas):not(.skip){ position:relative; z-index:1; }
-.nav{ z-index:5; }
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;letter-spacing:inherit;background:none;border:0;cursor:pointer}
 a,button,input,summary{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -1804,9 +1805,20 @@ boot();
   }, { passive: true });
 
   const INTERACTIVE = "a, button, input, textarea, select, label, summary, [role='button'], .term, [data-koi-ignore]";
-  window.addEventListener('click', (e) => {
+  // Tap detector via pointer events, so feeding works on touch too: iOS Safari
+  // doesn't deliver `click` on non-interactive elements (the open water we tap),
+  // but it does deliver pointerup. A tap = down and up at nearly the same spot;
+  // a drag or scroll moves too far and is ignored, so scrolling the page is safe.
+  let tapX = 0, tapY = 0, tapT = 0, tapPath = null;
+  window.addEventListener('pointerdown', (e) => {
+    tapX = e.clientX; tapY = e.clientY; tapT = e.timeStamp; tapPath = e.composedPath();
+  }, { passive: true });
+  window.addEventListener('pointerup', (e) => {
     if (rm.matches) return;
-    if (e.composedPath().some((nd) => nd instanceof Element && nd.matches && nd.matches(INTERACTIVE))) return;
+    if (Math.hypot(e.clientX - tapX, e.clientY - tapY) > 12) return;  // a drag/scroll
+    if (e.timeStamp - tapT > 600) return;                            // a long press
+    const path = tapPath || e.composedPath();
+    if (path.some((nd) => nd instanceof Element && nd.matches && nd.matches(INTERACTIVE))) return;
     if (window.getSelection && window.getSelection().toString()) return;
     const { x, y, inside } = toLocal(e);
     if (!inside) return;
@@ -1814,7 +1826,7 @@ boot();
     if (window.posthog && window.posthog.capture) {
       try { window.posthog.capture('koi_pond_fed', { pellet_count: pellets.length }); } catch (_) {}
     }
-  });
+  }, { passive: true });
   window.addEventListener('blur', () => { pointer.active = false; pointer.speed = 0; });
   document.documentElement.addEventListener('pointerleave', () => { pointer.active = false; pointer.speed = 0; });
 
